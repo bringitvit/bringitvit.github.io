@@ -1,0 +1,274 @@
+<!-- index.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Orders / Deliveries Demo</title>
+  <style>
+    body{font-family: Arial; max-width:900px;margin:20px auto}
+    .card{border:1px solid #ddd;padding:12px;margin-bottom:10px;border-radius:8px}
+    .btn{padding:8px 12px;margin-right:6px;cursor:pointer}
+    .modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center}
+    .modal .box{background:#fff;padding:18px;border-radius:8px;min-width:300px}
+    label{display:block;margin-top:8px}
+    input, textarea, select{width:100%;padding:6px;margin-top:4px}
+  </style>
+</head>
+<body>
+  <h1>Orders & Deliveries</h1>
+
+  <div id="auth-section" class="card">
+    <h3>Login / Verify</h3>
+    <div id="logged-out">
+      <input id="email" placeholder="your email" /><br>
+      <button id="send-code" class="btn">Send verification code</button>
+      <div style="margin-top:8px">
+        <input id="code" placeholder="6-digit code" style="width:150px;"/>
+        <input id="block" placeholder="block" style="width:100px;"/>
+        <input id="floor" placeholder="floor" style="width:100px;"/>
+        <button id="verify" class="btn">Verify & login</button>
+      </div>
+    </div>
+    <div id="logged-in" style="display:none">
+      <div>Logged in as <b id="me-email"></b></div>
+      <div>Block: <span id="me-block"></span> | Floor: <span id="me-floor"></span></div>
+      <button id="logout" class="btn">Logout</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <button id="place-order-btn" class="btn">Place Order</button>
+    <button id="view-takeorders" class="btn">Deliver Orders (takeorder)</button>
+    <button id="my-orders-btn" class="btn">My Orders</button>
+    <button id="my-deliveries-btn" class="btn">My Deliveries</button>
+  </div>
+
+  <div id="list" class="card"></div>
+
+  <!-- Place order modal -->
+  <div id="place-modal" class="modal" style="display:none">
+    <div class="box">
+      <h3>Place Order</h3>
+      <label>Room <input id="o-room"/></label>
+      <label>Block <input id="o-block"/></label>
+      <label>Floor <input id="o-floor"/></label>
+      <label>Delivery fee <input id="o-fee"/></label>
+      <label>Request <textarea id="o-note"></textarea></label>
+      <div style="margin-top:8px">
+        <!-- I include both a GET-with-headers send and a recommended POST send -->
+        <button id="send-get" class="btn">Send (GET with headers)</button>
+        <button id="send-post" class="btn">Send (POST json - recommended)</button>
+        <button id="close-modal" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const API = "http://localhost:5500";
+
+function getToken() {
+  return localStorage.getItem("token");
+}
+function setToken(t) {
+  if (t) localStorage.setItem("token", t);
+  else localStorage.removeItem("token");
+}
+function getStoredUser() {
+  try { return JSON.parse(localStorage.getItem("user")||"null"); } catch(e){return null;}
+}
+function setStoredUser(u){ localStorage.setItem("user", JSON.stringify(u)); }
+
+function showLoggedInUI() {
+  const u = getStoredUser();
+  if (!u) { document.getElementById("logged-in").style.display="none"; document.getElementById("logged-out").style.display="block"; return; }
+  document.getElementById("me-email").innerText = u.email;
+  document.getElementById("me-block").innerText = u.block;
+  document.getElementById("me-floor").innerText = u.floor;
+  document.getElementById("logged-in").style.display="block";
+  document.getElementById("logged-out").style.display="none";
+}
+
+document.getElementById("send-code").onclick = async () => {
+  const email = document.getElementById("email").value.trim();
+  if (!email) return alert("enter email");
+  const res = await fetch(API+"/send_verification", {
+    method:"POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({email})
+  });
+  const j = await res.json();
+  if (!res.ok) return alert("Failed: "+(j.error||JSON.stringify(j)));
+  alert("Code sent to email (check inbox).");
+};
+
+document.getElementById("verify").onclick = async () => {
+  const email = document.getElementById("email").value.trim();
+  const code = document.getElementById("code").value.trim();
+  const block = document.getElementById("block").value.trim();
+  const floor = document.getElementById("floor").value.trim();
+  if (!email||!code||!block||!floor) return alert("fill all fields");
+  const res = await fetch(API+"/verify_email", {
+    method:"POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({email, code, block, floor})
+  });
+  const j = await res.json();
+  if (!res.ok) return alert("Verify failed: "+(j.error||JSON.stringify(j)));
+  setToken(j.token);
+  setStoredUser({email: j.email, block, floor});
+  showLoggedInUI();
+  alert("Logged in!");
+};
+
+document.getElementById("logout").onclick = () => {
+  setToken(null); localStorage.removeItem("user"); showLoggedInUI();
+};
+
+// place order flow
+document.getElementById("place-order-btn").onclick = () => {
+  document.getElementById("place-modal").style.display = "flex";
+  const u = getStoredUser();
+  if (u) { document.getElementById("o-block").value = u.block; document.getElementById("o-floor").value = u.floor; }
+};
+document.getElementById("close-modal").onclick = () => document.getElementById("place-modal").style.display = "none";
+
+async function showList(html){
+  document.getElementById("list").innerHTML = html;
+}
+
+document.getElementById("send-get").onclick = async () => {
+  const t = getToken(); if(!t) return alert("login first");
+  const room = document.getElementById("o-room").value;
+  const block = document.getElementById("o-block").value;
+  const floor = document.getElementById("o-floor").value;
+  const fee = document.getElementById("o-fee").value;
+  const note = document.getElementById("o-note").value;
+  const res = await fetch(API+"/makeorder", {
+    method:"GET",
+    headers: {
+      "Authorization": t,
+      "X-Room": room,
+      "X-Block": block,
+      "X-Floor": floor,
+      "X-Fee": fee,
+      "X-Note": note
+    }
+  });
+  const j = await res.json();
+  if (!res.ok) return alert("Error: "+(j.error||JSON.stringify(j)));
+  alert("Order created ID: "+j.order.orderid);
+  document.getElementById("place-modal").style.display="none";
+};
+
+document.getElementById("send-post").onclick = async () => {
+  const t = getToken(); if(!t) return alert("login first");
+  const payload = {
+    room: document.getElementById("o-room").value,
+    block: document.getElementById("o-block").value,
+    floor: document.getElementById("o-floor").value,
+    fee: document.getElementById("o-fee").value,
+    note: document.getElementById("o-note").value
+  };
+  const res = await fetch(API+"/makeorder", {
+    method:"POST", headers: {"Content-Type":"application/json", "Authorization": t},
+    body: JSON.stringify(payload)
+  });
+  const j = await res.json();
+  if (!res.ok) return alert("Error: "+(j.error||JSON.stringify(j)));
+  alert("Order created ID: "+j.order.orderid);
+  document.getElementById("place-modal").style.display="none";
+};
+
+// list takeorder
+document.getElementById("view-takeorders").onclick = async () => {
+  const t = getToken(); if(!t) return alert("login first");
+  const res = await fetch(API+"/takeorder", {method:"GET", headers:{"Authorization":t}});
+  const j = await res.json();
+  if (!res.ok) return alert("Error: "+(j.error||JSON.stringify(j)));
+  const rows = j.orders.map(o => {
+    return `<div style="border-bottom:1px solid #eee;padding:8px">
+      <b>ID ${o.orderid}</b> (${o.server_provided_id})<br>
+      ${o.room}, block ${o.block}, floor ${o.floor} — fee ${o.fee || '-'}<br>
+      ${o.note || ''}<br>
+      <button onclick="accept('${o.orderid}')" class="btn">Accept delivery</button>
+    </div>`;
+  }).join("");
+  showList(`<h3>Open Orders</h3>${rows || '<i>no open orders</i>'}`);
+};
+
+// accept
+window.accept = async (orderid) => {
+  const t = getToken(); if(!t) return alert("login first");
+  const res = await fetch(API+"/accept_delivery", {
+    method:"POST", headers: {"Content-Type":"application/json","Authorization":t},
+    body: JSON.stringify({orderid})
+  });
+  const j = await res.json();
+  if (!res.ok) return alert("Error: "+(j.error||JSON.stringify(j)));
+  alert("Accepted order "+orderid);
+};
+
+// my orders
+document.getElementById("my-orders-btn").onclick = async () => {
+  const t = getToken(); if(!t) return alert("login first");
+  const res = await fetch(API+"/myorders", {method:"GET", headers:{"Authorization":t}});
+  const j = await res.json();
+  if (!res.ok) return alert("Error: "+(j.error||JSON.stringify(j)));
+
+  const rows = j.orders.map(o => {
+    let buttons = `<button onclick="cancelOrder('${o.orderid}')" class="btn">Cancel order</button>`;
+    if(o.status === "ASSIGNED"){
+      buttons += ` <button onclick="markReceived('${o.orderid}')" class="btn btn-accent">Mark Received</button>`;
+    }
+    return `<div style="border-bottom:1px solid #eee;padding:8px">
+      <b>ID ${o.orderid}</b> — status ${o.status}<br>
+      ${o.room}, ${o.block}, ${o.floor}<br>
+      ${o.note || ''}<br>
+      ${buttons}
+    </div>`;
+  }).join("");
+
+  showList(`<h3>My Orders</h3>${rows||'<i>none</i>'}`);
+};
+
+// mark received
+window.markReceived = async (orderid) => {
+  const t = getToken(); if(!t) return alert("login first");
+  const res = await fetch(API+"/mark_received", {
+    method:"POST",
+    headers: {"Content-Type":"application/json","Authorization":t},
+    body: JSON.stringify({orderid})
+  });
+  const j = await res.json();
+  if(!res.ok) return alert("Error: "+(j.error||JSON.stringify(j)));
+  alert("Order marked as received!");
+  document.getElementById("my-orders-btn").click(); // refresh list
+};
+
+// my deliveries
+document.getElementById("my-deliveries-btn").onclick = async () => {
+  const t = getToken(); if(!t) return alert("login first");
+  const res = await fetch(API+"/mydeliveries", {method:"GET", headers:{"Authorization":t}});
+  const j = await res.json();
+  if (!res.ok) return alert("Error: "+(j.error||JSON.stringify(j)));
+  const rows = j.orders.map(o => `<div style="border-bottom:1px solid #eee;padding:8px">
+    <b>ID ${o.orderid}</b> — status ${o.status}<br>
+    ${o.room}, ${o.block}, ${o.floor}<br>
+    <button onclick="cancelDelivery('${o.orderid}')" class="btn">Cancel delivery</button>
+  </div>`).join("");
+  showList(`<h3>My Deliveries</h3>${rows||'<i>none</i>'}`);
+};
+
+window.cancelDelivery = async (orderid) => {
+  const t = getToken(); if(!t) return alert("login first");
+  const res = await fetch(API+"/cancel_delivery", {
+    method:"POST", headers: {"Content-Type":"application/json","Authorization":t},
+    body: JSON.stringify({orderid})
+  });
+  const j = await res.json();
+  if (!res.ok) return alert("Error: "+(j.error||JSON.stringify(j)));
+  alert("Canceled delivery assignment");
+};
+
+// init UI
+showLoggedInUI();
+</script>
+</body>
+</html>
