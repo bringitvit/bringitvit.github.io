@@ -1,0 +1,228 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Store</title>
+
+    <link rel="stylesheet" href="style2.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+
+<!-- ==========================
+     NAVBAR (FIXED)
+=========================== -->
+
+<header>
+
+    <div class="logo">
+        BringIt
+    </div>
+
+    <div class="nav-right">
+
+   
+
+        <button class="cart-btn" onclick="openCart()">
+            🛒 Cart
+            <span id="cartCount">0</span>
+        </button>
+
+        <div id="authButtons">
+
+            <button class="login-btn" onclick="openLogin()">
+                Login
+            </button>
+
+        </div>
+
+    </div>
+
+</header>
+
+<!-- ==========================
+     HERO
+=========================== -->
+
+<section class="hero">
+
+    <h1>Get Your Snacks Here!!</h1>
+
+    <p>Get it dilivered to your rooms @Discounted rates !!</p>
+
+</section>
+
+<!-- ==========================
+     SORT BAR
+=========================== -->
+
+<div class="toolbar">
+
+    <select id="sortSelect">
+
+        <option value="default">Sort Products</option>
+        <option value="price">Price Low → High</option>
+        <option value="discount">Highest Discount</option>
+
+    </select>
+
+</div>
+
+<!-- ==========================
+     PRODUCTS
+=========================== -->
+
+<main>
+
+    <div id="products" class="products"></div>
+
+</main>
+
+<!-- ==========================
+     CART DRAWER
+=========================== -->
+
+<div id="cartDrawer" class="cart">
+
+    <div class="cart-header">
+
+        <h2>Shopping Cart</h2>
+
+        <button class="close-cart" onclick="closeCart()">✕</button>
+
+    </div>
+
+    <div id="cartItems" class="cart-items"></div>
+
+    <div class="cart-footer">
+
+        <div class="total">
+            Total: <span id="cartTotal">₹0</span>
+        </div>
+
+        <button class="clear-btn" onclick="clearCart()">
+            Clear Cart
+        </button>
+
+        <button class="checkout-btn" onclick="openCheckout()">
+            Checkout
+        </button>
+
+    </div>
+
+</div>
+
+<!-- BACKDROP -->
+
+<div id="cartBackdrop" class="backdrop" onclick="closeCart()"></div>
+
+<!-- ==========================
+     CHECKOUT MODAL
+=========================== -->
+
+<div id="checkoutModal" class="modal" hidden>
+
+    <div class="modal-content">
+
+        <h2>Checkout</h2>
+
+        <p>Enter delivery details</p>
+
+        <input type="text" id="customerName" placeholder="Your Name">
+
+        <input type="text" id="deliveryLocation" placeholder="Delivery Location">
+
+        <div class="modal-buttons">
+
+            <button class="cancel-btn" onclick="closeCheckout()">Cancel</button>
+
+            <button class="confirm-btn" onclick="placeOrder()">Place Order</button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ==========================
+     LOGIN MODAL
+=========================== -->
+
+<div id="loginModal" class="modal" hidden>
+
+    <div class="modal-content">
+
+        <h2>Login</h2>
+
+        <p>Enter your account details</p>
+
+        <input type="text" id="loginUsername" placeholder="Username">
+
+        <input type="password" id="loginPassword" placeholder="Password">
+
+        <div class="modal-buttons">
+
+            <button class="cancel-btn" onclick="closeLogin()">Cancel</button>
+
+            <button class="confirm-btn" onclick="loginUser()">Login</button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ==========================
+     PROFILE MODAL
+=========================== -->
+
+<div id="profileModal" class="modal" hidden>
+
+    <div class="modal-content profile-content">
+
+        <div class="profile-header">
+
+            <h2>My Profile</h2>
+
+            <button class="close-cart" onclick="closeProfile()">✕</button>
+
+        </div>
+
+        <div id="profileData">
+
+            <div style="padding:20px;text-align:center;">
+                Loading...
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- TOAST -->
+
+<div id="toast"></div>
+
+<!-- FOOTER -->
+
+<footer style="text-align:center;padding:40px;color:#94a3b8;">
+     Powered By Students
+</footer>
+
+<!-- JS -->
+
+<script src="app2.js"></script>
+
+</body>
+</html>
