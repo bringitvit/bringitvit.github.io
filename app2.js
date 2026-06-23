@@ -159,7 +159,7 @@ function renderProducts() {
         card.innerHTML = `
             <div class="image-container">
                 <img
-                    src="http://127.0.0.1:5001/image/${encodeURIComponent(item.name)}"
+                    src="${API_URL}/image/${encodeURIComponent(item.name)}"
                 >
                 <div class="discount-badge">
                     ${discountPercent}% OFF
@@ -190,9 +190,6 @@ function renderProducts() {
     });
 }
 
-// =======================
-// CART
-// =======================
 
 function addToCart(itemKey) {
     const stock = inventory[itemKey];
