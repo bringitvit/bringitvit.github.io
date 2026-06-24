@@ -133,12 +133,27 @@ function renderProducts() {
     }
 
     if (sortType === "discount") {
-        items.sort((a, b) => {
-            const A = parseItem(a[0]);
-            const B = parseItem(b[0]);
+        // items.sort((a, b) => {
+        //     const A = parseItem(a[0]);
+        //     const B = parseItem(b[0]);
 
-            return (B.realPrice - B.soldPrice) - (A.realPrice - A.soldPrice);
-        });
+        //     return (B.realPrice - B.soldPrice) - (A.realPrice - A.soldPrice);
+        // });
+            items.sort((a, b) => {
+        const A = parseItem(a[0]);
+        const B = parseItem(b[0]);
+
+        const discountA = A.realPrice > 0
+            ? ((A.realPrice - A.soldPrice) / A.realPrice) * 100
+            : 0;
+
+        const discountB = B.realPrice > 0
+            ? ((B.realPrice - B.soldPrice) / B.realPrice) * 100
+            : 0;
+
+        return discountB - discountA;
+    });
+
     }
 
     items.forEach(([itemKey, qty]) => {
