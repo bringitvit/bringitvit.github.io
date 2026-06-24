@@ -1,4 +1,4 @@
-const API_URL = "https://enclosed-citations-tour-parties.trycloudflare.com";
+const API_URL = "https://bringit-server.taild897f3.ts.net";
 
 let inventory = {};
 let cart = {};
