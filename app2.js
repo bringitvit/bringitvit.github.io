@@ -1,4 +1,4 @@
-const API_URL = "https://bringit-server.taild897f3.ts.net";
+const API_URL = "https://bringit-server-s1.taild897f3.ts.net";
 
 let inventory = {};
 let cart = {};
