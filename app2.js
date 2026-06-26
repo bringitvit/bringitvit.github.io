@@ -375,7 +375,7 @@ async function placeOrder() {
                     username: username,
                     password: password,
                     name: name,
-                    delivery_location: location,
+                    dloc: location,
                     items: JSON.stringify(cart)
                 }
             });
